@@ -1,0 +1,20 @@
+MockMyCam
+Copyright 2026 Kaarl Moroti
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this project except in compliance with the License. A copy of the License is in
+the LICENSE file at the repository root, or at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+--------------------------------------------------------------------------------
+
+This product bundles VirtualCamera.dylib, built from Objective-C sources vendored
+(unmodified) from the baguette project:
+
+    baguette — https://github.com/tddworks/baguette
+    Copyright 2026 tddworks
+    Licensed under the Apache License, Version 2.0.
+
+See ThirdParty/VirtualCamera/LICENSE and ThirdParty/VirtualCamera/NOTICE for the
+full license text and attribution.

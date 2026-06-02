@@ -1,0 +1,19 @@
+MockMyCam — vendored third-party component
+==========================================
+
+This directory contains VirtualCamera, the iOS-Simulator camera-injection
+library used by MockMyCam.
+
+Vendored from:
+  baguette — https://github.com/tddworks/baguette
+  (which in turn vendored it from asc-pro/SimCam)
+
+License: Apache License 2.0 (see ./LICENSE in this directory).
+
+The Objective-C sources under ./Sources are unmodified copies of the upstream
+VirtualCamera sources. MockMyCam builds them via Scripts/build-dylib.sh (an
+original build script, not the upstream build.sh) and bundles the resulting
+VirtualCamera.dylib inside MockMyCam.app.
+
+The rest of MockMyCam is licensed under the Apache License 2.0 (see the
+repository-root LICENSE and NOTICE files).

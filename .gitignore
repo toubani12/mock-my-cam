@@ -1,0 +1,15 @@
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Built dylib artifacts (regenerate with Scripts/build-dylib.sh)
+ThirdParty/VirtualCamera/VirtualCamera.dylib
+Sources/MockMyCamKit/Resources/VirtualCamera.dylib
+
+# App bundle output
+/build/
+*.app
+
+# macOS
+.DS_Store
