@@ -3,27 +3,131 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MockMyCam — a fake camera for the iOS Simulator</title>
-  <meta name="description" content="A macOS menu-bar app that feeds a fake camera into the running iOS Simulator. Use your Mac's webcam as a live feed, or mock an image or looped video — something Apple doesn't support natively." />
+  <title>Virtual Camera for the iOS Simulator — MockMyCam</title>
+  <meta name="description" content="Free, open-source macOS menu-bar app that injects a virtual camera into the iOS Simulator. Stream a webcam, image, or video — test camera apps, no device." />
+  <link rel="canonical" href="https://mockmycam.kaarlmoroti.com/" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
   <meta name="theme-color" content="#eef1f0" />
+  <meta name="application-name" content="MockMyCam" />
+  <meta name="author" content="Kaarl Moroti" />
+  <meta name="keywords" content="virtual camera iOS Simulator, iOS Simulator camera, fake camera iOS Simulator, mock camera iOS, test camera without a physical device, camera image injection, AVFoundation, AVCaptureSession, QR scanner testing, macOS menu bar app" />
+
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/favicon.svg" />
 
   <!-- Open Graph / social -->
-  <meta property="og:title" content="MockMyCam — a fake camera for the iOS Simulator" />
-  <meta property="og:description" content="Feed your Mac's webcam, an image, or a looped video into the iOS Simulator's camera. macOS menu-bar app. Free & open source." />
+  <meta property="og:site_name" content="MockMyCam" />
+  <meta property="og:title" content="Virtual Camera for the iOS Simulator — MockMyCam" />
+  <meta property="og:description" content="A free, open-source macOS menu-bar app that injects a virtual camera into the iOS Simulator. Stream your webcam, an image, or a looped video — no device, no code changes." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://mockmycam.kaarlmoroti.com/" />
+  <meta property="og:locale" content="en_US" />
   <meta property="og:image" content="https://mockmycam.kaarlmoroti.com/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="MockMyCam — a virtual camera for the iOS Simulator" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Virtual Camera for the iOS Simulator — MockMyCam" />
+  <meta name="twitter:description" content="Free, open-source macOS menu-bar app that injects a virtual camera into the iOS Simulator. Stream a webcam, image, or video — no device needed." />
+  <meta name="twitter:image" content="https://mockmycam.kaarlmoroti.com/assets/og-image.png" />
+  <meta name="twitter:image:alt" content="MockMyCam — a virtual camera for the iOS Simulator" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Structured data: the app + the FAQ (mirrors the visible FAQ section) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "MockMyCam",
+    "alternateName": "MockMyCam — virtual camera for the iOS Simulator",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS 14+ (Apple Silicon)",
+    "url": "https://mockmycam.kaarlmoroti.com/",
+    "downloadUrl": "https://github.com/kaarl77/ios-camera-simulator/releases/latest",
+    "softwareHelp": "https://github.com/kaarl77/ios-camera-simulator",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "isAccessibleForFree": true,
+    "image": "https://mockmycam.kaarlmoroti.com/assets/og-image.png",
+    "screenshot": "https://mockmycam.kaarlmoroti.com/assets/screenshot-app.png",
+    "description": "A free, open-source macOS menu-bar app that injects a virtual camera into the iOS Simulator. Stream your Mac's webcam, a still image, or a looped video into the Simulator's camera through standard AVFoundation APIs — test QR and barcode scanning, document capture, and camera UI without a physical device or any code changes.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Kaarl Moroti", "url": "https://github.com/kaarl77" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does the iOS Simulator support the camera?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. The iOS Simulator has no camera hardware and can't use your Mac's webcam by default, so camera views show a black screen. MockMyCam adds a virtual camera feed so your app sees real video." }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I test the camera in the iOS Simulator?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Run MockMyCam from the macOS menu bar, pick a webcam, image, or video as the source, and hit Arm. The feed is injected into the running Simulator through standard AVFoundation APIs — with no code changes to your app." }
+      },
+      {
+        "@type": "Question",
+        "name": "How can I test a QR code or barcode scanner in the iOS Simulator?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Feed an image or video that contains the code as the virtual camera source. Your AVCaptureSession scanner reads it exactly as it would on a real device." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does my app say \"no camera device found\" in the Simulator (e.g. React Native VisionCamera)?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Because the Simulator exposes no capture device. MockMyCam registers a virtual camera so the camera APIs return a valid device and live frames." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I inject a video into the Simulator camera, not just a still image?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. MockMyCam loops a video file as the live camera feed, shows a still image, or streams your Mac's webcam in real time — switch sources on the fly." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is MockMyCam free and open source?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — it's a free, open-source (Apache-2.0) macOS menu-bar app, unlike paid alternatives. You can read the code, build it yourself, and extend the hooks." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Self-hosted fonts (no third-party requests; @font-face is in the stylesheet below) -->
+  <link rel="preload" href="assets/fonts/hanken-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="assets/fonts/fraunces-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
 
   <style>
     /* ============================================================
        MockMyCam — "Islands in a dawn sky"
        Light, glass-island theme. Hand-authored, no build step.
        ============================================================ */
+
+    /* ---- self-hosted fonts: no third-party requests (GDPR-friendly). Variable
+           fonts, so one file covers the whole weight range. ---- */
+    @font-face{ font-family:"Fraunces"; font-style:normal; font-weight:400 600; font-display:swap;
+      src:url("assets/fonts/fraunces-normal-latin.woff2") format("woff2");
+      unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+    @font-face{ font-family:"Fraunces"; font-style:normal; font-weight:400 600; font-display:swap;
+      src:url("assets/fonts/fraunces-normal-latinext.woff2") format("woff2");
+      unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+    @font-face{ font-family:"Fraunces"; font-style:italic; font-weight:500 600; font-display:swap;
+      src:url("assets/fonts/fraunces-italic-latin.woff2") format("woff2");
+      unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+    @font-face{ font-family:"Fraunces"; font-style:italic; font-weight:500 600; font-display:swap;
+      src:url("assets/fonts/fraunces-italic-latinext.woff2") format("woff2");
+      unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+    @font-face{ font-family:"Hanken Grotesk"; font-style:normal; font-weight:400 800; font-display:swap;
+      src:url("assets/fonts/hanken-grotesk-latin.woff2") format("woff2");
+      unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+    @font-face{ font-family:"Hanken Grotesk"; font-style:normal; font-weight:400 800; font-display:swap;
+      src:url("assets/fonts/hanken-grotesk-latinext.woff2") format("woff2");
+      unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+    @font-face{ font-family:"Spline Sans Mono"; font-style:normal; font-weight:400 500; font-display:swap;
+      src:url("assets/fonts/spline-sans-mono-latin.woff2") format("woff2");
+      unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+    @font-face{ font-family:"Spline Sans Mono"; font-style:normal; font-weight:400 500; font-display:swap;
+      src:url("assets/fonts/spline-sans-mono-latinext.woff2") format("woff2");
+      unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 
     *,*::before,*::after{ box-sizing:border-box; }
     html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
@@ -307,6 +411,19 @@
     .support-card p{ color:var(--ink-2); max-width:30em; margin:14px auto 0; }
     .support-card .cta-row{ justify-content:center; }
 
+    /* ---------- faq ---------- */
+    .faq-list{ max-width:760px; margin:50px auto 0; display:grid; gap:14px; }
+    details.faq{ padding:0; overflow:hidden; }
+    details.faq summary{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:16px;
+      padding:20px 24px; font-family:var(--font-display); font-weight:500; font-size:clamp(17px,2.4vw,20px);
+      line-height:1.25; color:var(--ink); }
+    details.faq summary::-webkit-details-marker{ display:none; }
+    .faq .chev{ flex:none; margin-left:auto; color:var(--coral); transition:transform .3s cubic-bezier(.2,.8,.2,1); }
+    details.faq[open] .chev{ transform:rotate(180deg); }
+    .faq .answer{ padding:0 24px 22px; margin:0; color:var(--ink-2); font-size:15.5px; }
+    .faq .answer code{ font-size:.85em; }
+    .faq .answer a{ color:var(--coral-deep); text-decoration:underline; text-decoration-style:dotted; text-underline-offset:3px; }
+
     /* ---------- footer ---------- */
     footer{ border-top:1px solid var(--line-2); }
     .foot{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:34px 0; color:var(--ink-3); font-size:14px; }
@@ -356,6 +473,7 @@
         <nav class="nav-links">
           <a class="link" href="#how">How it works</a>
           <a class="link" href="#start">Quick start</a>
+          <a class="link" href="#faq">FAQ</a>
           <a class="link" href="https://github.com/kaarl77/ios-camera-simulator">GitHub</a>
           <a class="btn btn-kofi btn-sm" href="https://ko-fi.com/kaarl77">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z"/><path d="M17 9h2.2a2.3 2.3 0 0 1 0 4.6H17"/><path d="M7.5 3.5v1.8M11 3.5v1.8"/></svg>
@@ -379,7 +497,7 @@
           <div class="hero-copy">
             <span class="eyebrow reveal" style="--d:.0s"><span class="dot"></span> macOS menu-bar · Apple Silicon · Apache-2.0</span>
             <h1 class="hero-title reveal" style="--d:.08s">A <em>fake camera</em><br/>for the iOS&nbsp;Simulator.</h1>
-            <p class="lede reveal" style="--d:.16s">The Simulator has no camera — so your app sees a black screen. <strong>MockMyCam</strong> injects one: stream your Mac's webcam live, or feed in an image or looped video. No code changes in your app.</p>
+            <p class="lede reveal" style="--d:.16s">The iOS Simulator has no camera — so your app sees a black screen. <strong>MockMyCam</strong> injects a <strong>virtual camera</strong>: stream your Mac's webcam live, or feed in an image or looped video. Test camera features without a physical device — no code changes in your app.</p>
             <div class="cta-row reveal" style="--d:.24s">
               <a class="btn btn-primary" href="https://github.com/kaarl77/ios-camera-simulator/releases/latest">
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a1 1 0 0 1 1 1v9.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V4a1 1 0 0 1 1-1Z"/><path d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
@@ -440,7 +558,7 @@
     <!-- ============================== FEATURES ============================== -->
     <section class="blk">
       <div class="wrap">
-        <h2 class="h2 reveal">Three sources, one shared frame</h2>
+        <h2 class="h2 reveal">Three sources, one virtual camera</h2>
         <p class="section-sub reveal" style="--d:.06s">Pick what the Simulator's camera should "see." Switch live — the feed updates instantly.</p>
 
         <div class="cards">
@@ -452,12 +570,12 @@
           <div class="card island island-hover reveal" style="--d:.06s">
             <div class="chip"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.6-3.6a2 2 0 0 0-2.8 0L4 22"/></svg></div>
             <h3>Mock a still image</h3>
-            <p>Upload a photo and the camera shows that frame — perfect for demos, screenshots, and deterministic tests.</p>
+            <p>Show a fixed frame to the camera — ideal for testing a QR or barcode scanner, demos, screenshots, and deterministic snapshot tests.</p>
           </div>
           <div class="card island island-hover reveal" style="--d:.12s">
             <div class="chip"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg></div>
             <h3>Loop a video</h3>
-            <p>Feed a looped clip to simulate motion — scanning a document, a face moving, a scene panning by.</p>
+            <p>Feed a looped clip to simulate motion — a document or ID being scanned, a face moving, a scene panning by.</p>
           </div>
           <div class="card island island-hover reveal">
             <div class="chip teal"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/></svg></div>
@@ -467,7 +585,7 @@
           <div class="card island island-hover reveal" style="--d:.06s">
             <div class="chip teal"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
             <h3>No changes to your app</h3>
-            <p>It hooks AVFoundation at runtime via DYLD injection. Your camera code stays exactly as it ships.</p>
+            <p>It hooks AVFoundation at runtime via DYLD injection — your AVCaptureSession and camera code run exactly as they ship.</p>
           </div>
           <div class="card island island-hover reveal" style="--d:.12s">
             <div class="chip teal"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18c-4.5 1.5-4.5-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.5 1.3a12 12 0 0 0-6.3 0C6.5 2.3 5.5 2.6 5.5 2.6a4.3 4.3 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></div>
@@ -569,6 +687,52 @@ make run</pre>
       </div>
     </section>
 
+    <!-- ============================== FAQ ============================== -->
+    <section id="faq" class="blk divider">
+      <div class="wrap">
+        <h2 class="h2 reveal">Questions, answered</h2>
+        <p class="section-sub reveal" style="--d:.06s">The common questions about testing the camera in the iOS Simulator.</p>
+
+        <div class="faq-list">
+          <details class="faq island reveal" open>
+            <summary>Does the iOS Simulator support the camera?
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="answer">No. The iOS Simulator has no camera hardware and can't use your Mac's webcam by default, so camera views show a black screen. MockMyCam adds a virtual camera feed so your app sees real video.</p>
+          </details>
+
+          <details class="faq island reveal">
+            <summary>How do I test the camera in the iOS Simulator?
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="answer">Run MockMyCam from the macOS menu bar, pick a webcam, image, or video as the source, and hit <strong>Arm</strong>. The feed is injected into the running Simulator through standard AVFoundation APIs — with no code changes to your app.</p>
+          </details>
+
+          <details class="faq island reveal">
+            <summary>How can I test a QR code or barcode scanner in the iOS Simulator?
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="answer">Feed an image or video that contains the code as the virtual camera source. Your <code>AVCaptureSession</code> scanner reads it exactly as it would on a real device — great for QR, barcode, and document-capture flows.</p>
+          </details>
+
+          <details class="faq island reveal">
+            <summary>Why does my app say “no camera device found” in the Simulator?
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="answer">Because the Simulator exposes no capture device — a common error with React Native VisionCamera and similar libraries. MockMyCam registers a virtual camera so the camera APIs return a valid device and live frames.</p>
+          </details>
+
+          <details class="faq island reveal">
+            <summary>Can I inject a video, not just a still image?
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="answer">Yes. MockMyCam loops a video file as the live camera feed, shows a still image, or streams your Mac's webcam in real time — and you can switch sources on the fly.</p>
+          </details>
+
+          <details class="faq island reveal">
+            <summary>Is MockMyCam free and open source?
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p class="answer">Yes — it's a free, open-source (Apache-2.0) macOS menu-bar app, unlike paid alternatives. <a href="https://github.com/kaarl77/ios-camera-simulator">Read the code</a>, build it yourself, and extend the hooks.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
     <!-- ============================== SUPPORT / DONATE ============================== -->
     <section class="support">
       <div class="wrap">
@@ -602,6 +766,7 @@ make run</pre>
         <a href="https://github.com/kaarl77/ios-camera-simulator">GitHub</a>
         <a href="https://github.com/kaarl77/ios-camera-simulator/releases/latest">Download</a>
         <a href="https://ko-fi.com/kaarl77">Ko-fi</a>
+        <a href="privacy.html">Privacy</a>
         <a href="https://github.com/tddworks/baguette">Built on baguette</a>
       </div>
     </div>
