@@ -273,10 +273,21 @@
     .nav-links a.link{ padding:9px 13px; border-radius:10px; text-decoration:none; color:var(--ink-2);
       font-weight:500; font-size:14.5px; white-space:nowrap; transition:color .2s, background .2s; }
     .nav-links a.link:hover{ color:var(--ink); background:rgba(33,29,24,.05); }
-    @media(max-width:640px){ .nav-links a.link{ display:none; } }
+    @media(max-width:640px){
+      .nav-links a.link{ display:none; }
+      .nav-bar{ gap:8px; padding:8px 10px 8px 14px; }
+      .brand{ font-size:15.5px; gap:9px; }
+      .brand .mark{ width:30px; height:30px; }
+      .nav-links{ gap:6px; }
+      .nav-links .btn-sm{ padding:9px 12px; font-size:13.5px; }
+      .nav-links .btn-kofi{ padding:9px 10px; gap:0; }   /* Ko-fi → compact, icon-only */
+      .nav-links .btn-kofi .kofi-label{ display:none; }
+    }
+    /* very small phones: keep just brand + Download in the bar (Ko-fi stays in the support section + footer) */
+    @media(max-width:340px){ .nav-links .btn-kofi{ display:none; } }
 
     /* ---------- hero ---------- */
-    .hero{ padding:38px 0 26px; }
+    .hero{ padding:38px 0 26px; overflow:hidden; }   /* contain the decorative orbs so they don't widen the page */
     .hero-grid{ display:grid; gap:46px; align-items:center; }
     @media(min-width:960px){ .hero-grid{ grid-template-columns:1.04fr .96fr; } }
 
@@ -383,6 +394,7 @@
 
     /* ---------- quick start ---------- */
     .start-grid{ margin-top:52px; display:grid; gap:34px; }
+    .start-grid > *{ min-width:0; }   /* let grid items shrink so the <pre> scrolls instead of widening the page */
     @media(min-width:960px){ .start-grid{ grid-template-columns:1.3fr 1fr; align-items:start; } }
     ol.steps{ list-style:none; margin:0; padding:0; display:grid; gap:16px; }
     ol.steps li{ display:flex; gap:16px; align-items:flex-start; }
@@ -477,7 +489,7 @@
           <a class="link" href="https://github.com/kaarl77/ios-camera-simulator">GitHub</a>
           <a class="btn btn-kofi btn-sm" href="https://ko-fi.com/kaarl77">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z"/><path d="M17 9h2.2a2.3 2.3 0 0 1 0 4.6H17"/><path d="M7.5 3.5v1.8M11 3.5v1.8"/></svg>
-            Ko-fi
+            <span class="kofi-label">Ko-fi</span>
           </a>
           <a class="btn btn-primary btn-sm" href="https://github.com/kaarl77/ios-camera-simulator/releases/latest">Download</a>
         </nav>
