@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MockMyCam — a fake camera for the iOS Simulator</title>
+  <meta name="description" content="A macOS menu-bar app that feeds a fake camera into the running iOS Simulator. Use your Mac's webcam as a live feed, or mock an image or looped video — something Apple doesn't support natively." />
+  <meta name="theme-color" content="#eef1f0" />
+
+  <!-- Open Graph / social -->
+  <meta property="og:title" content="MockMyCam — a fake camera for the iOS Simulator" />
+  <meta property="og:description" content="Feed your Mac's webcam, an image, or a looped video into the iOS Simulator's camera. macOS menu-bar app. Free & open source." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mockmycam.kaarlmoroti.com/" />
+  <meta property="og:image" content="https://mockmycam.kaarlmoroti.com/assets/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ============================================================
+       MockMyCam — "Islands in a dawn sky"
+       Light, glass-island theme. Hand-authored, no build step.
+       ============================================================ */
+
+    *,*::before,*::after{ box-sizing:border-box; }
+    html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+    body{ margin:0; }
+
+    :root{
+      /* sky / paper */
+      --sky-1:#dfe9ee;     /* cool dawn at the top */
+      --sky-2:#eef0ec;     /* haze */
+      --paper:#f3efe7;     /* warm horizon */
+      --paper-2:#efeadf;
+
+      /* ink */
+      --ink:#211d18;       /* warm near-black */
+      --ink-2:#5f5950;     /* secondary text */
+      --ink-3:#938b7e;     /* muted */
+      --line:rgba(33,29,24,.10);
+      --line-2:rgba(33,29,24,.06);
+
+      /* accents */
+      --coral:#ec6a4e;     /* sunset — primary */
+      --coral-2:#f4825f;
+      --coral-deep:#c9512f;
+      --tide:#2f8f86;      /* sea — secondary */
+      --honey:#f0b23f;     /* sun — tertiary */
+
+      /* glass islands */
+      --glass:rgba(255,255,255,.55);
+      --glass-2:rgba(255,255,255,.72);
+      --glass-brd:rgba(255,255,255,.75);
+      --rim:rgba(255,255,255,.9);
+
+      --r:22px;
+      --r-lg:30px;
+
+      /* the signature "floating" shadow — tight contact + long ambient */
+      --float:
+        0 1px 0 var(--rim) inset,
+        0 1px 2px rgba(33,29,24,.04),
+        0 10px 24px -12px rgba(33,29,24,.18),
+        0 34px 60px -28px rgba(33,29,24,.28);
+      --float-lift:
+        0 1px 0 var(--rim) inset,
+        0 2px 6px rgba(33,29,24,.06),
+        0 18px 40px -14px rgba(33,29,24,.22),
+        0 50px 90px -34px rgba(33,29,24,.34);
+
+      --font-display:"Fraunces",Georgia,"Times New Roman",serif;
+      --font-sans:"Hanken Grotesk",-apple-system,BlinkMacSystemFont,sans-serif;
+      --font-mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,monospace;
+    }
+
+    body{
+      font-family:var(--font-sans);
+      color:var(--ink);
+      background:var(--paper);
+      line-height:1.6;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+      overflow-x:hidden;
+    }
+
+    /* ---- atmosphere: the dawn sky + drifting light, fixed behind everything ---- */
+    .sky{ position:fixed; inset:0; z-index:-2; pointer-events:none;
+      background:
+        radial-gradient(80% 55% at 78% 8%,  rgba(240,178,63,.20),  transparent 60%),
+        radial-gradient(70% 60% at 12% 22%, rgba(47,143,134,.16),  transparent 62%),
+        radial-gradient(90% 70% at 50% 108%,rgba(236,106,78,.20),  transparent 60%),
+        linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 32%, var(--paper) 66%, var(--paper-2) 100%);
+    }
+    /* film grain — the detail that kills the flat-gradient AI sheen */
+    .grain{ position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.5; mix-blend-mode:soft-light;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    /* decorative floating orbs — soft islands of light */
+    .orb{ position:absolute; border-radius:50%; filter:blur(36px); pointer-events:none; z-index:0; opacity:.6; }
+
+    /* ---------- layout helpers ---------- */
+    .wrap{ max-width:1120px; margin:0 auto; padding:0 22px; }
+    section{ position:relative; }
+    .divider{ border-top:1px solid var(--line-2); }
+
+    /* ---------- glass island ---------- */
+    .island{
+      background:var(--glass);
+      -webkit-backdrop-filter:blur(20px) saturate(160%);
+      backdrop-filter:blur(20px) saturate(160%);
+      border:1px solid var(--glass-brd);
+      border-radius:var(--r);
+      box-shadow:var(--float);
+    }
+    .island-hover{ transition:transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease; }
+    .island-hover:hover{ transform:translateY(-6px); box-shadow:var(--float-lift); }
+
+    /* ---------- typography ---------- */
+    h1,h2,h3{ font-family:var(--font-display); font-weight:500; letter-spacing:-.01em; color:var(--ink); margin:0; }
+    .eyebrow{
+      display:inline-flex; align-items:center; gap:9px;
+      font-family:var(--font-sans); font-weight:600; font-size:12px;
+      letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2);
+      padding:8px 14px; border-radius:999px;
+      background:var(--glass-2); border:1px solid var(--glass-brd);
+      box-shadow:var(--float);
+    }
+    .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--tide); box-shadow:0 0 0 4px rgba(47,143,134,.16); }
+
+    .h2{ font-size:clamp(28px,4vw,42px); line-height:1.08; text-align:center; }
+    .lede{ color:var(--ink-2); font-size:17px; }
+    .section-sub{ color:var(--ink-2); text-align:center; max-width:620px; margin:14px auto 0; }
+
+    a{ color:inherit; }
+    code{ font-family:var(--font-mono); font-size:.86em; background:rgba(33,29,24,.05);
+      border:1px solid var(--line-2); padding:.12em .42em; border-radius:7px; color:var(--ink); }
+
+    /* ---------- buttons ---------- */
+    .btn{ display:inline-flex; align-items:center; gap:10px; font-family:var(--font-sans);
+      font-weight:600; font-size:15px; border-radius:14px; padding:14px 22px;
+      text-decoration:none; cursor:pointer; border:1px solid transparent;
+      transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, background .2s; }
+    .btn:hover{ transform:translateY(-2px); }
+    .btn-primary{ color:#fff; background:linear-gradient(180deg,var(--coral-2),var(--coral));
+      box-shadow:0 1px 0 rgba(255,255,255,.4) inset, 0 10px 22px -8px rgba(201,81,47,.65); }
+    .btn-primary:hover{ box-shadow:0 1px 0 rgba(255,255,255,.4) inset, 0 16px 30px -8px rgba(201,81,47,.7); }
+    .btn-coffee{ color:#231a00; background:linear-gradient(180deg,#ffe34d,#ffd000);
+      box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 10px 22px -10px rgba(180,140,0,.7); }
+    .btn-ghost{ color:var(--ink); background:var(--glass-2); border:1px solid var(--glass-brd);
+      box-shadow:var(--float); }
+    .btn-ghost:hover{ box-shadow:var(--float-lift); }
+    .btn-sm{ padding:10px 16px; font-size:14px; border-radius:12px; }
+
+    /* ---------- nav ---------- */
+    .nav{ position:sticky; top:0; z-index:50; }
+    .nav-inner{ margin:14px auto 0; max-width:1120px; }
+    .nav-bar{ display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:10px 12px 10px 16px; border-radius:18px;
+      background:rgba(255,255,255,.62); -webkit-backdrop-filter:blur(18px) saturate(160%);
+      backdrop-filter:blur(18px) saturate(160%); border:1px solid var(--glass-brd);
+      box-shadow:var(--float); }
+    .brand{ display:flex; align-items:center; gap:11px; text-decoration:none; font-weight:700; font-size:17px; color:var(--ink); }
+    .mark{ display:grid; place-items:center; width:34px; height:34px; border-radius:11px; color:#fff;
+      background:linear-gradient(150deg,var(--honey),var(--coral)); box-shadow:0 6px 14px -6px rgba(236,106,78,.7), 0 1px 0 rgba(255,255,255,.5) inset; }
+    .nav-links{ display:flex; align-items:center; gap:4px; }
+    .nav-links a.link{ padding:9px 13px; border-radius:10px; text-decoration:none; color:var(--ink-2);
+      font-weight:500; font-size:14.5px; white-space:nowrap; transition:color .2s, background .2s; }
+    .nav-links a.link:hover{ color:var(--ink); background:rgba(33,29,24,.05); }
+    @media(max-width:640px){ .nav-links a.link[href^="#"]{ display:none; } }
+
+    /* ---------- hero ---------- */
+    .hero{ padding:38px 0 26px; }
+    .hero-grid{ display:grid; gap:46px; align-items:center; }
+    @media(min-width:960px){ .hero-grid{ grid-template-columns:1.04fr .96fr; } }
+
+    .hero-title{ font-size:clamp(40px,6.4vw,68px); line-height:1.02; margin-top:22px; font-weight:500; }
+    .hero-title em{ font-style:italic; font-weight:500; color:var(--coral);
+      background:linear-gradient(180deg,var(--coral-2),var(--coral-deep));
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero-copy p.lede{ margin-top:22px; max-width:30em; }
+    .cta-row{ display:flex; flex-wrap:wrap; gap:12px; margin-top:34px; }
+    .fineprint{ margin-top:18px; font-size:13.5px; color:var(--ink-3); }
+
+    /* ---------- device mockup ---------- */
+    .stage{ position:relative; display:grid; place-items:center; min-height:560px; }
+    .phone-wrap{ position:relative; width:286px; }
+    .phone{ position:relative; border-radius:46px; padding:11px;
+      background:linear-gradient(160deg,#2a2722,#16140f);
+      box-shadow:0 1px 0 rgba(255,255,255,.12) inset, 0 40px 80px -28px rgba(33,29,24,.55), 0 18px 40px -20px rgba(33,29,24,.4);
+      border:1px solid rgba(0,0,0,.4); }
+    .screen{ position:relative; border-radius:36px; overflow:hidden; aspect-ratio:9/19.5; }
+    /* golden-hour "camera feed" — warm photographic gradient, not neon */
+    .feed{ position:absolute; inset:0;
+      background:
+        radial-gradient(120% 80% at 26% 12%, rgba(240,178,63,.6), transparent 58%),
+        radial-gradient(120% 90% at 84% 96%, rgba(236,106,78,.55), transparent 55%),
+        linear-gradient(150deg,#33425c 0%, #6a4a55 52%, #b56b48 100%); }
+    .feed .grid-ov{ position:absolute; inset:0;
+      background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);
+      background-size:30px 30px; }
+    .island-notch{ position:absolute; top:13px; left:50%; transform:translateX(-50%); width:96px; height:26px; border-radius:999px; background:rgba(8,7,5,.86); }
+    .subject{ position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:178px; opacity:.92; }
+    .rec{ position:absolute; top:50px; left:18px; display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; color:rgba(255,255,255,.95); letter-spacing:.04em; }
+    .rec i{ width:8px; height:8px; border-radius:50%; background:#ff4d4d; box-shadow:0 0 10px #ff4d4d; }
+    .watermark{ position:absolute; bottom:16px; right:16px; font-family:var(--font-mono); font-size:10px; color:rgba(255,255,255,.55); }
+
+    /* floating control panel island */
+    .panel{ position:absolute; left:-26px; top:54px; width:228px; padding:15px; border-radius:20px;
+      background:rgba(255,255,255,.74); -webkit-backdrop-filter:blur(22px) saturate(170%); backdrop-filter:blur(22px) saturate(170%);
+      border:1px solid var(--glass-brd); box-shadow:var(--float-lift); font-size:12px; }
+    @media(min-width:560px){ .panel{ left:-58px; } }
+    .panel-head{ display:flex; align-items:center; gap:9px; padding-bottom:11px; margin-bottom:11px; border-bottom:1px solid var(--line); }
+    .panel-head .mark{ width:26px; height:26px; border-radius:9px; }
+    .panel-title{ font-weight:700; font-size:13px; }
+    .panel-armed{ margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--tide); }
+    .panel-armed i{ width:7px; height:7px; border-radius:50%; background:var(--tide); box-shadow:0 0 0 3px rgba(47,143,134,.18); }
+    .panel-label{ color:var(--ink-3); font-weight:600; font-size:11px; letter-spacing:.02em; margin-top:11px; }
+    .panel-field{ margin-top:6px; padding:9px 11px; border-radius:10px; background:rgba(33,29,24,.05);
+      display:flex; align-items:center; justify-content:space-between; font-weight:500; }
+    .seg{ margin-top:6px; display:grid; grid-template-columns:repeat(3,1fr); gap:4px; padding:4px; border-radius:11px; background:rgba(33,29,24,.05); }
+    .seg span{ text-align:center; padding:6px 0; border-radius:8px; color:var(--ink-2); font-weight:500; }
+    .seg span.on{ color:#fff; font-weight:600; background:linear-gradient(180deg,var(--coral-2),var(--coral)); box-shadow:0 4px 10px -5px rgba(201,81,47,.7); }
+    .panel-btns{ margin-top:13px; display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .panel-btns b{ text-align:center; padding:9px 0; border-radius:10px; font-weight:600; font-size:11.5px; }
+    .pb-ghost{ background:rgba(33,29,24,.06); color:var(--ink); }
+    .pb-coral{ background:linear-gradient(180deg,var(--coral-2),var(--coral)); color:#fff; }
+    .toggles{ margin-top:12px; display:flex; gap:16px; color:var(--ink-2); font-weight:500; }
+    .tg{ display:inline-flex; align-items:center; gap:7px; }
+    .sw{ width:30px; height:16px; border-radius:999px; position:relative; }
+    .sw i{ position:absolute; top:2px; width:12px; height:12px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); }
+    .sw.on{ background:var(--coral); } .sw.on i{ right:2px; }
+    .sw.off{ background:rgba(33,29,24,.18); } .sw.off i{ left:2px; }
+
+    /* ---------- pipeline strip ---------- */
+    .pipe{ margin-top:46px; padding:16px 20px; overflow-x:auto; border-radius:16px; }
+    .pipe code{ background:none; border:none; padding:0; font-size:13.5px; color:var(--ink-2); white-space:nowrap; }
+    .pipe .c-tide{ color:var(--tide); font-weight:500; } .pipe .c-coral{ color:var(--coral-deep); font-weight:500; } .pipe .c-ink{ color:var(--ink); }
+
+    /* ---------- cards ---------- */
+    .blk{ padding:74px 0; }
+    .cards{ margin-top:52px; display:grid; gap:18px; grid-template-columns:1fr; }
+    @media(min-width:640px){ .cards{ grid-template-columns:1fr 1fr; } }
+    @media(min-width:960px){ .cards{ grid-template-columns:repeat(3,1fr); } }
+    .card{ padding:26px; }
+    .chip{ display:grid; place-items:center; width:46px; height:46px; border-radius:14px; margin-bottom:18px;
+      color:var(--coral-deep); background:linear-gradient(160deg,rgba(240,178,63,.22),rgba(236,106,78,.18));
+      border:1px solid rgba(236,106,78,.18); }
+    .chip.teal{ color:var(--tide); background:linear-gradient(160deg,rgba(47,143,134,.18),rgba(47,143,134,.1)); border-color:rgba(47,143,134,.2); }
+    .card h3{ font-size:21px; }
+    .card p{ margin:9px 0 0; color:var(--ink-2); font-size:15px; }
+
+    /* numbered steps (how it works) */
+    .steps3{ margin-top:52px; display:grid; gap:18px; grid-template-columns:1fr; }
+    @media(min-width:760px){ .steps3{ grid-template-columns:repeat(3,1fr); } }
+    .step{ position:relative; padding:30px 26px 26px; }
+    .step .num{ font-family:var(--font-display); font-weight:600; font-size:56px; line-height:1; color:transparent;
+      -webkit-text-stroke:1.5px rgba(236,106,78,.4); }
+    .step h3{ font-size:20px; margin-top:6px; }
+    .step p{ margin:8px 0 0; color:var(--ink-2); font-size:14.5px; }
+    .credit{ margin-top:30px; text-align:center; color:var(--ink-3); font-size:14px; }
+    .credit a{ color:var(--ink-2); text-decoration:underline; text-decoration-style:dotted; text-underline-offset:3px; }
+
+    /* ---------- screenshots ---------- */
+    .shots{ margin:52px auto 0; display:grid; gap:22px; grid-template-columns:1fr; max-width:880px; }
+    @media(min-width:760px){ .shots{ grid-template-columns:1fr 1fr; } }
+    figure.shot{ margin:0; overflow:hidden; display:flex; flex-direction:column; }
+    .shot .media{ flex:1; display:flex; align-items:center; justify-content:center; padding:18px; }
+    .shot .media img, .shot .media video{ max-width:100%; max-height:460px; width:auto; height:auto; display:block;
+      border-radius:14px; box-shadow:0 12px 34px -14px rgba(33,29,24,.45); }
+    .shot-ph{ width:100%; aspect-ratio:4/5; max-height:460px; display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px;
+      color:var(--ink-3); text-align:center; padding:18px; border-radius:14px;
+      border:1.5px dashed var(--line);
+      background:repeating-linear-gradient(45deg, rgba(33,29,24,.025) 0 12px, transparent 12px 24px); }
+    .shot-ph span{ font-family:var(--font-mono); font-size:12.5px; }
+    figcaption{ padding:14px 18px; font-size:14px; color:var(--ink-2); border-top:1px solid var(--line-2); }
+
+    /* ---------- quick start ---------- */
+    .start-grid{ margin-top:52px; display:grid; gap:34px; }
+    @media(min-width:960px){ .start-grid{ grid-template-columns:1.3fr 1fr; align-items:start; } }
+    ol.steps{ list-style:none; margin:0; padding:0; display:grid; gap:16px; }
+    ol.steps li{ display:flex; gap:16px; align-items:flex-start; }
+    ol.steps .n{ flex:none; display:grid; place-items:center; width:32px; height:32px; border-radius:50%;
+      font-weight:700; font-size:14px; color:var(--coral-deep); background:rgba(236,106,78,.13); border:1px solid rgba(236,106,78,.25); }
+    ol.steps p{ margin:3px 0 0; color:var(--ink-2); font-size:15.5px; }
+    ol.steps strong{ color:var(--ink); font-weight:600; }
+    .aside-card{ padding:22px; }
+    .aside-card + .aside-card{ margin-top:16px; }
+    .aside-card .t{ font-weight:700; font-size:14.5px; }
+    pre{ margin:14px 0 0; padding:15px; border-radius:13px; overflow-x:auto;
+      background:#23201b; color:#ece6da; font-family:var(--font-mono); font-size:12.5px; line-height:1.7;
+      box-shadow:0 1px 0 rgba(255,255,255,.06) inset; }
+    pre .dim{ color:#9a9082; }
+    .warn{ border:1px solid rgba(240,178,63,.5); background:linear-gradient(180deg,rgba(240,178,63,.12),rgba(240,178,63,.05)); }
+    .warn .t{ color:var(--coral-deep); }
+    .warn p{ margin:7px 0 0; color:var(--ink-2); font-size:13.5px; }
+
+    /* ---------- support ---------- */
+    .support{ padding:30px 0 86px; }
+    .support-card{ position:relative; overflow:hidden; text-align:center; padding:58px 28px;
+      border-radius:var(--r-lg);
+      background:linear-gradient(165deg, rgba(255,255,255,.8), rgba(255,247,236,.6));
+      border:1px solid var(--glass-brd); box-shadow:var(--float-lift); }
+    .support-card h2{ font-size:clamp(28px,4vw,40px); }
+    .support-card p{ color:var(--ink-2); max-width:30em; margin:14px auto 0; }
+    .support-card .cta-row{ justify-content:center; }
+
+    /* ---------- footer ---------- */
+    footer{ border-top:1px solid var(--line-2); }
+    .foot{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:34px 0; color:var(--ink-3); font-size:14px; }
+    .foot .brand{ font-size:15px; gap:9px; }
+    .foot .mark{ width:28px; height:28px; border-radius:9px; }
+    .foot-links{ display:flex; gap:22px; }
+    .foot-links a{ color:var(--ink-2); text-decoration:none; }
+    .foot-links a:hover{ color:var(--ink); }
+    .trademark{ text-align:center; font-size:12.5px; color:var(--ink-3); padding-bottom:30px; }
+
+    /* ---------- motion ---------- */
+    @keyframes rise{ from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:none; } }
+    @keyframes floatA{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-16px); } }
+    @keyframes floatB{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(10px,-22px); } }
+    @keyframes floatC{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(-12px,14px); } }
+
+    .js .reveal{ opacity:0; }
+    .js .reveal.in{ animation:rise .8s cubic-bezier(.2,.75,.2,1) forwards; animation-delay:var(--d,0s); }
+
+    .anim-float{ animation:floatA 7s ease-in-out infinite; }
+    .orb-a{ animation:floatB 16s ease-in-out infinite; }
+    .orb-b{ animation:floatC 19s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce){
+      *{ scroll-behavior:auto !important; }
+      .js .reveal{ opacity:1 !important; }
+      .js .reveal.in{ animation:none !important; }
+      .anim-float,.orb-a,.orb-b{ animation:none !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sky"></div>
+  <div class="grain"></div>
+
+  <!-- ============================== NAV ============================== -->
+  <header class="nav">
+    <div class="nav-inner wrap">
+      <div class="nav-bar">
+        <a href="#top" class="brand">
+          <span class="mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
+          </span>
+          MockMyCam
+        </a>
+        <nav class="nav-links">
+          <a class="link" href="#how">How it works</a>
+          <a class="link" href="#start">Quick start</a>
+          <a class="link" href="https://github.com/kaarl77/ios-camera-simulator">GitHub</a>
+          <a class="btn btn-primary btn-sm" href="https://github.com/kaarl77/ios-camera-simulator/releases/latest">Download</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ============================== HERO ============================== -->
+    <section class="hero">
+      <div class="orb orb-a" style="width:360px;height:360px;background:rgba(240,178,63,.5);top:-40px;right:-60px;"></div>
+      <div class="orb orb-b" style="width:300px;height:300px;background:rgba(47,143,134,.4);top:280px;left:-90px;"></div>
+      <div class="wrap">
+        <div class="hero-grid">
+          <!-- copy -->
+          <div class="hero-copy">
+            <span class="eyebrow reveal" style="--d:.0s"><span class="dot"></span> macOS menu-bar · Apple Silicon · Apache-2.0</span>
+            <h1 class="hero-title reveal" style="--d:.08s">A <em>fake camera</em><br/>for the iOS&nbsp;Simulator.</h1>
+            <p class="lede reveal" style="--d:.16s">The Simulator has no camera — so your app sees a black screen. <strong>MockMyCam</strong> injects one: stream your Mac's webcam live, or feed in an image or looped video. No code changes in your app.</p>
+            <div class="cta-row reveal" style="--d:.24s">
+              <a class="btn btn-primary" href="https://github.com/kaarl77/ios-camera-simulator/releases/latest">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a1 1 0 0 1 1 1v9.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V4a1 1 0 0 1 1-1Z"/><path d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
+                Download for macOS
+              </a>
+              <!-- Buy Me a Coffee removed for now — re-add <a class="btn btn-coffee" href="https://www.buymeacoffee.com/HANDLE">☕ Buy me a coffee</a> when ready. -->
+              <a class="btn btn-ghost" href="https://github.com/kaarl77/ios-camera-simulator">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.3-1.8-1.3-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+                View on GitHub
+              </a>
+            </div>
+            <p class="fineprint reveal" style="--d:.32s">Free &amp; open source. Apple Silicon Mac, macOS 14+, Xcode 16+.</p>
+          </div>
+
+          <!-- device mockup -->
+          <div class="stage reveal" style="--d:.2s">
+            <div class="phone-wrap anim-float">
+              <div class="phone">
+                <div class="screen">
+                  <div class="feed"><div class="grid-ov"></div></div>
+                  <div class="island-notch"></div>
+                  <svg class="subject" viewBox="0 0 200 160" fill="none">
+                    <circle cx="100" cy="52" r="34" fill="rgba(255,255,255,.2)"/>
+                    <path d="M30 160c0-44 31-66 70-66s70 22 70 66" fill="rgba(255,255,255,.16)"/>
+                  </svg>
+                  <div class="rec"><i></i> REC</div>
+                  <div class="watermark">MockMyCam</div>
+                </div>
+              </div>
+
+              <!-- floating control-panel island -->
+              <div class="panel">
+                <div class="panel-head">
+                  <span class="mark"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg></span>
+                  <span class="panel-title">MockMyCam</span>
+                  <span class="panel-armed"><i></i> Armed</span>
+                </div>
+                <div class="panel-label">Simulator</div>
+                <div class="panel-field">iPhone 16 Pro <span style="color:var(--ink-3)">▾</span></div>
+                <div class="panel-label">Source</div>
+                <div class="seg"><span class="on">Webcam</span><span>Image</span><span>Video</span></div>
+                <div class="panel-btns"><b class="pb-ghost">Relaunch app…</b><b class="pb-coral">Disarm</b></div>
+                <div class="toggles">
+                  <span class="tg"><span class="sw on"><i></i></span> Mirror</span>
+                  <span class="tg"><span class="sw off"><i></i></span> Fill</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- pipeline strip -->
+        <div class="pipe island reveal" style="--d:.1s">
+          <code><span class="c-tide">webcam / image / video</span> &nbsp;→&nbsp; BGRA frames &nbsp;→&nbsp; <span class="c-ink">/tmp/SimCam.bgra</span> (mmap) &nbsp;→&nbsp; <span class="c-coral">VirtualCamera.dylib</span> &nbsp;→&nbsp; your app's <span class="c-ink">AVFoundation</span></code>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== FEATURES ============================== -->
+    <section class="blk">
+      <div class="wrap">
+        <h2 class="h2 reveal">Three sources, one shared frame</h2>
+        <p class="section-sub reveal" style="--d:.06s">Pick what the Simulator's camera should "see." Switch live — the feed updates instantly.</p>
+
+        <div class="cards">
+          <div class="card island island-hover reveal">
+            <div class="chip"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></div>
+            <h3>Live webcam passthrough</h3>
+            <p>Stream your Mac's FaceTime or any connected camera straight into the Simulator in real time.</p>
+          </div>
+          <div class="card island island-hover reveal" style="--d:.06s">
+            <div class="chip"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.6-3.6a2 2 0 0 0-2.8 0L4 22"/></svg></div>
+            <h3>Mock a still image</h3>
+            <p>Upload a photo and the camera shows that frame — perfect for demos, screenshots, and deterministic tests.</p>
+          </div>
+          <div class="card island island-hover reveal" style="--d:.12s">
+            <div class="chip"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg></div>
+            <h3>Loop a video</h3>
+            <p>Feed a looped clip to simulate motion — scanning a document, a face moving, a scene panning by.</p>
+          </div>
+          <div class="card island island-hover reveal">
+            <div class="chip teal"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/></svg></div>
+            <h3>Lives in your menu bar</h3>
+            <p>No dock clutter, no window juggling. Pick a simulator, choose a source, hit Arm.</p>
+          </div>
+          <div class="card island island-hover reveal" style="--d:.06s">
+            <div class="chip teal"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+            <h3>No changes to your app</h3>
+            <p>It hooks AVFoundation at runtime via DYLD injection. Your camera code stays exactly as it ships.</p>
+          </div>
+          <div class="card island island-hover reveal" style="--d:.12s">
+            <div class="chip teal"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18c-4.5 1.5-4.5-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.5 1.3a12 12 0 0 0-6.3 0C6.5 2.3 5.5 2.6 5.5 2.6a4.3 4.3 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></div>
+            <h3>Free &amp; open source</h3>
+            <p>Apache-2.0 licensed. Read the code, build it yourself, extend the hooks.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== HOW IT WORKS ============================== -->
+    <section id="how" class="blk divider">
+      <div class="wrap">
+        <h2 class="h2 reveal">How it works</h2>
+        <div class="steps3">
+          <div class="step island reveal">
+            <div class="num">1</div>
+            <h3>Shared memory</h3>
+            <p>MockMyCam writes BGRA frames into a memory-mapped file at <code>/tmp/SimCam.bgra</code>. The Simulator's <code>/tmp</code> is the host's <code>/private/tmp</code> — same bytes, both sides.</p>
+          </div>
+          <div class="step island reveal" style="--d:.08s">
+            <div class="num">2</div>
+            <h3>Dylib injection</h3>
+            <p>It injects <code>VirtualCamera.dylib</code> via <code>simctl … DYLD_INSERT_LIBRARIES</code>, which swizzles <code>AVCaptureVideoPreviewLayer</code>, photo capture, and the image picker.</p>
+          </div>
+          <div class="step island reveal" style="--d:.16s">
+            <div class="num">3</div>
+            <h3>Your app renders it</h3>
+            <p>The dylib reads each frame and draws it wherever the app shows the camera. Your code thinks it's talking to a real one.</p>
+          </div>
+        </div>
+        <p class="credit reveal">The dylib is vendored from <a href="https://github.com/tddworks/baguette">baguette</a> (Apache-2.0) and built from source.</p>
+      </div>
+    </section>
+
+    <!-- ============================== SCREENSHOTS ============================== -->
+    <section id="screenshots" class="blk divider">
+      <div class="wrap">
+        <h2 class="h2 reveal">See it in action</h2>
+        <p class="section-sub reveal" style="--d:.06s">The menu bar and a live feed running side by side in the iOS Simulator.</p>
+
+        <div class="shots">
+          <!-- Real media live in docs/assets/; the <img>/<video> show automatically (placeholder if missing). -->
+          <figure class="shot island island-hover reveal">
+            <div class="media">
+              <img src="assets/screenshot-app.png" alt="MockMyCam menu-bar panel feeding an image into the iOS Simulator's camera" loading="lazy"
+                   onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+              <div class="shot-ph">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.6-3.6a2 2 0 0 0-2.8 0L4 22"/></svg>
+                <span>assets/screenshot-app.png</span>
+              </div>
+            </div>
+            <figcaption>The app and Simulator, side by side</figcaption>
+          </figure>
+
+          <figure class="shot island island-hover reveal" style="--d:.08s">
+            <div class="media">
+              <video src="assets/demo-video.mp4" poster="assets/demo-video-poster.jpg"
+                     autoplay muted loop playsinline preload="metadata"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"></video>
+              <div class="shot-ph">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none"/></svg>
+                <span>assets/demo-video.mp4</span>
+              </div>
+            </div>
+            <figcaption>Live — a video looped into the camera</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== QUICK START ============================== -->
+    <section id="start" class="blk divider">
+      <div class="wrap">
+        <h2 class="h2 reveal">Quick start</h2>
+        <div class="start-grid">
+          <ol class="steps reveal">
+            <li><span class="n">1</span><p><strong>Boot a simulator</strong> and open the menu-bar icon, then pick that simulator from the dropdown.</p></li>
+            <li><span class="n">2</span><p><strong>Choose a source</strong> — Webcam, Image, or Video — and hit <strong>Start</strong>. You'll see a live preview of the outgoing feed.</p></li>
+            <li><span class="n">3</span><p><strong>Arm</strong> — this installs and injects the dylib into your selected simulator.</p></li>
+            <li><span class="n">4</span><p><strong>Relaunch your app</strong> (from the menu or Xcode). It comes back with the camera injected. Done.</p></li>
+          </ol>
+
+          <div class="reveal" style="--d:.08s">
+            <div class="aside-card island">
+              <p class="t">Prefer to build from source?</p>
+              <pre><span class="dim"># builds dylib + release app</span>
+make app
+<span class="dim"># launches it</span>
+make run</pre>
+            </div>
+            <div class="aside-card island warn">
+              <p class="t">Downloaded build won't open?</p>
+              <p>The app isn't notarized yet, so Gatekeeper quarantines it. After moving it to Applications:</p>
+              <pre>xattr -dr com.apple.quarantine /Applications/MockMyCam.app</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== SUPPORT / DONATE ============================== -->
+    <section class="support">
+      <div class="wrap">
+        <div class="support-card reveal">
+          <div class="orb orb-a" style="width:300px;height:300px;background:rgba(240,178,63,.45);top:-120px;left:50%;transform:translateX(-50%);"></div>
+          <h2>Free &amp; open source</h2>
+          <p>MockMyCam is free and open source, built in spare time. If it's useful to you, a star helps others find it.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/kaarl77/ios-camera-simulator">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.3-1.8-1.3-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+              Star on GitHub
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/kaarl77/ios-camera-simulator/releases/latest">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a1 1 0 0 1 1 1v9.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V4a1 1 0 0 1 1-1Z"/><path d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
+              Download for macOS
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================== FOOTER ============================== -->
+  <footer>
+    <div class="wrap foot">
+      <a href="#top" class="brand">
+        <span class="mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg></span>
+        MockMyCam <span style="color:var(--ink-3);font-weight:500">· Apache-2.0</span>
+      </a>
+      <div class="foot-links">
+        <a href="https://github.com/kaarl77/ios-camera-simulator">GitHub</a>
+        <a href="https://github.com/kaarl77/ios-camera-simulator/releases/latest">Download</a>
+        <a href="https://github.com/tddworks/baguette">Built on baguette</a>
+      </div>
+    </div>
+    <p class="trademark">Not affiliated with Apple. iOS and the iOS Simulator are trademarks of Apple Inc.</p>
+  </footer>
+
+  <script>
+    // progressive enhancement: only hide-for-reveal when JS is on
+    document.documentElement.classList.add('js');
+    (function(){
+      var reveals = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { reveals.forEach(function(el){ el.classList.add('in'); }); return; }
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, { threshold:.12, rootMargin:'0px 0px -8% 0px' });
+      reveals.forEach(function(el){ io.observe(el); });
+    })();
+  </script>
+</body>
+</html>

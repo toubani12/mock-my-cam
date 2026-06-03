@@ -13,3 +13,6 @@ Sources/MockMyCamKit/Resources/VirtualCamera.dylib
 
 # macOS
 .DS_Store
+
+# packaged landing page (build artifact)
+/mockmycam-site.zip
