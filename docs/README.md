@@ -30,10 +30,11 @@ meta tags in `index.html` back at the Pages URL.
 
 ## Before you ship
 
-No text placeholders remain — the Buy Me a Coffee buttons were removed, and the `og:url` /
-`og:image` tags already point at `mockmycam.kaarlmoroti.com`. The only thing the **Download**
-button needs is a published **GitHub Release** with the built `MockMyCam.app` (zipped) or a
-`.dmg` attached; it links to the repo's *latest release*, so it just works once that exists.
+No text placeholders remain — the donate buttons (header, support section, footer) link to
+Ko-fi (`ko-fi.com/kaarl77`), and the `og:url` / `og:image` tags already point at
+`mockmycam.kaarlmoroti.com`. The only thing the **Download** button needs is a published
+**GitHub Release** with the built `MockMyCam.app` (zipped) or a `.dmg` attached; it links to the
+repo's *latest release*, so it just works once that exists.
 
 ## Add media
 
