@@ -11,6 +11,9 @@ Sources/MockMyCamKit/Resources/VirtualCamera.dylib
 /build/
 *.app
 
+# Claude Code local workspace (plans, lessons, preview config)
+.claude/
+
 # macOS
 .DS_Store
 
