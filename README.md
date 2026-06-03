@@ -4,7 +4,10 @@ A macOS menu-bar app that feeds a **fake camera into the running iOS Simulator**
 simulator app sees a "real" camera where Apple normally provides none. Use your Mac's
 webcam as a live feed, or mock an image / looped video.
 
-<p align="center"><em>Webcam · Image · Video → /tmp/SimCam.bgra → injected into the sim's AVFoundation</em></p>
+<p align="center">
+  <strong>🌐 <a href="https://mockmycam.kaarlmoroti.com/">mockmycam.kaarlmoroti.com</a></strong><br>
+  <em>Webcam · Image · Video → /tmp/SimCam.bgra → injected into the sim's AVFoundation</em>
+</p>
 
 ## How it works
 
