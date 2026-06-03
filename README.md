@@ -34,6 +34,20 @@ make app     # builds the dylib + release app → build/MockMyCam.app
 make run     # launches it (menu-bar icon: camera.viewfinder)
 ```
 
+## Installing a downloaded build
+
+MockMyCam isn't yet signed with an Apple Developer ID or notarized, so a build
+downloaded from the web is quarantined and Gatekeeper refuses to open it
+("Apple could not verify…"). After moving `MockMyCam.app` to `/Applications`,
+clear the quarantine flag:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/MockMyCam.app
+```
+
+(Or open it once via **System Settings ▸ Privacy & Security ▸ Open Anyway**.)
+Building from source with `make app` doesn't have this issue.
+
 ## Using it
 
 1. **Boot a simulator** (Xcode ▸ Open Developer Tool ▸ Simulator, or run your app once).
