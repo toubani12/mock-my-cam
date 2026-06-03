@@ -51,7 +51,7 @@ final class E2EInjectionTests: XCTestCase {
         let sim = SimulatorController()
         let device = try XCTUnwrap(try sim.bootedDevices().first, "No booted simulator found")
         let udid = device.udid
-        let bundleID = "com.rankingcoach.SimProbe"
+        let bundleID = "com.kaarlmoroti.SimProbe"
 
         let installedDylib = try DylibInstaller.install(dylibAt: dylibURL)
         try sim.install(appPath: appPath, udid: udid)

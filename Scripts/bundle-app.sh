@@ -30,7 +30,7 @@ cp "$ROOT/Packaging/Info.plist" "$APP/Contents/Info.plist"
 
 codesign --force --sign - \
     --entitlements "$ROOT/Packaging/MockMyCam.entitlements" \
-    --identifier com.rankingcoach.MockMyCam \
+    --identifier com.kaarlmoroti.MockMyCam \
     "$APP" >/dev/null
 
 echo "Built $APP"

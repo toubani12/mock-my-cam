@@ -5,7 +5,7 @@
     <key>CFBundleExecutable</key>
     <string>MockMyCam</string>
     <key>CFBundleIdentifier</key>
-    <string>com.rankingcoach.MockMyCam</string>
+    <string>com.kaarlmoroti.MockMyCam</string>
     <key>CFBundleName</key>
     <string>MockMyCam</string>
     <key>CFBundleDisplayName</key>

@@ -5,7 +5,7 @@
     <key>CFBundleExecutable</key>
     <string>SimProbe</string>
     <key>CFBundleIdentifier</key>
-    <string>com.rankingcoach.SimProbe</string>
+    <string>com.kaarlmoroti.SimProbe</string>
     <key>CFBundleName</key>
     <string>SimProbe</string>
     <key>CFBundleDisplayName</key>
