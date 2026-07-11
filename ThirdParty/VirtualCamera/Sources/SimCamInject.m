@@ -14,10 +14,17 @@
 // AVCaptureVideoPreviewLayer — and modern camera apps don't use the picker
 // anyway. They use AVFoundation directly (often via SwiftUI wrappers).
 //
+// V2 hook: `-[AVCaptureVideoDataOutput setSampleBufferDelegate:queue:]`. This is
+// the frame path used by apps that render the camera through a Metal/GL texture
+// instead of a preview layer — Flutter's `camera` plugin, react-native-vision-
+// camera, and barcode/ML/document scanners. On iOS 26 that is the common case,
+// so preview-layer painting alone is no longer enough. We wrap the delegate and
+// feed it synthetic `CMSampleBuffer`s built from /tmp/SimCam.bgra (see
+// SimCamSampleBufferDriver).
+//
 // Future hooks (deferred):
-//   - AVCaptureVideoDataOutput.setSampleBufferDelegate:queue: → CMSampleBuffer
-//     delivery for apps doing custom frame processing.
-//   - AVCapturePhotoOutput.capturePhotoWithSettings:delegate: → still capture.
+//   - AVCaptureMetadataOutput → machine-readable-code (QR/barcode) objects for
+//     apps that scan via the metadata path rather than the sample buffers.
 //   - AVCaptureMovieFileOutput.startRecordingToOutputFileURL:... → recording.
 
 #import <Foundation/Foundation.h>
@@ -26,6 +33,9 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 #import "SimCamPreviewLayerDriver.h"
+#import "SimCamSampleBufferDriver.h"
+#import "SimCamCaptureShim.h"
+#import "SimCamVisionShim.h"
 #import "SimCamSharedFrameReader.h"
 #import "SimCamFakePhoto.h"
 
@@ -39,7 +49,10 @@ static IMP gOriginalCapturePhoto = NULL;
 static IMP gOriginalStartRunning = NULL;
 static IMP gOriginalStopRunning = NULL;
 static IMP gOriginalIsSourceTypeAvailable = NULL;
+static IMP gOriginalIsCameraDeviceAvailable = NULL;
+static IMP gOriginalSetSampleBufferDelegate = NULL;
 static const void *kSimCamDriverKey = &kSimCamDriverKey;
+static const void *kSimCamSampleDriverKey = &kSimCamSampleDriverKey;
 static const void *kSimCamShutterWrappedDelegateKey = &kSimCamShutterWrappedDelegateKey;
 
 /// Aspect (width / height) of the picker's `CAMPreviewView` rect, captured
@@ -205,6 +218,42 @@ static void simcam_setSession(id self, SEL _cmd, id session) {
     }
 }
 
+#pragma mark - AVCaptureVideoDataOutput (sample-buffer path)
+
+/// Hook for `-[AVCaptureVideoDataOutput setSampleBufferDelegate:queue:]`. Apps
+/// that consume raw frames (Flutter, RN-vision-camera, scanners) register a
+/// delegate here instead of putting a preview layer on screen. We attach a
+/// SimCamSampleBufferDriver that pushes /tmp/SimCam.bgra frames to that delegate
+/// as CMSampleBuffers on the app's own queue.
+static void simcam_setSampleBufferDelegate(id self, SEL _cmd,
+        id<AVCaptureVideoDataOutputSampleBufferDelegate> delegate,
+        dispatch_queue_t queue) {
+    // Call through first so AVFoundation's own bookkeeping stays consistent.
+    ((void (*)(id, SEL, id, dispatch_queue_t))gOriginalSetSampleBufferDelegate)(
+            self, _cmd, delegate, queue);
+
+    // Tear down any previous driver on this output (reconfiguration / detach).
+    SimCamSampleBufferDriver *existing =
+            objc_getAssociatedObject(self, kSimCamSampleDriverKey);
+    if (existing != nil) {
+        [existing stop];
+        objc_setAssociatedObject(self, kSimCamSampleDriverKey, nil,
+                OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+
+    if (delegate == nil || queue == nil) return;  // app is detaching.
+
+    SimCamSampleBufferDriver *driver =
+            [[SimCamSampleBufferDriver alloc] initWithOutput:(AVCaptureOutput *)self
+                                                    delegate:delegate
+                                                       queue:queue];
+    objc_setAssociatedObject(self, kSimCamSampleDriverKey, driver,
+            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [driver start];
+    NSLog(@"[SimCamInject] AVCaptureVideoDataOutput delegate hooked (%@)",
+            NSStringFromClass([delegate class]));
+}
+
 static void simcam_capturePhoto(id self,
         SEL _cmd,
         AVCapturePhotoSettings *settings,
@@ -261,6 +310,14 @@ static void simcam_capturePhoto(id self,
 static BOOL simcam_isSourceTypeAvailable(id self, SEL _cmd, NSInteger sourceType) {
     if (sourceType == UIImagePickerControllerSourceTypeCamera) return YES;
     return ((BOOL (*)(id, SEL, NSInteger))gOriginalIsSourceTypeAvailable)(self, _cmd, sourceType);
+}
+
+/// Class-method swizzle: report both camera devices as available. Apps and
+/// `image_picker` gate on `+[UIImagePickerController isCameraDeviceAvailable:]`
+/// (distinct from `isSourceTypeAvailable:`) and show "Camera not available"
+/// when it's NO — which it always is in the simulator.
+static BOOL simcam_isCameraDeviceAvailable(id self, SEL _cmd, NSInteger cameraDevice) {
+    return YES;
 }
 
 /// Walks the picker's view tree once it's on screen. Logs each view's
@@ -387,9 +444,21 @@ static void simcam_install(void) {
             return;  // Already installed.
         }
 
+        // Make the simulator behave as if a real camera exists, so apps that
+        // build an AVCaptureSession from an AVCaptureDeviceInput (Flutter,
+        // RN-vision-camera, scanners) get past "no camera" and reach the
+        // sample-buffer path we feed. Must run before those apps configure
+        // their session.
+        SimCamInstallCaptureShim();
+
+        // Make Vision barcode/QR detection work in the simulator (Vision's ML
+        // backend fails there) by serving those requests via CIDetector. Apps
+        // like Flutter's mobile_scanner abort the whole camera on that failure.
+        SimCamInstallVisionShim();
+
         Class previewLayerClass = NSClassFromString(@"AVCaptureVideoPreviewLayer");
         if (previewLayerClass == nil) {
-            NSLog(@"[SimCamInject] AVCaptureVideoPreviewLayer not available; nothing to do");
+            NSLog(@"[SimCamInject] AVCaptureVideoPreviewLayer not available; capture shim active, no preview hook");
             return;
         }
 
@@ -411,6 +480,22 @@ static void simcam_install(void) {
             }
         }
 
+        // AVCaptureVideoDataOutput: deliver frames to apps that read raw
+        // CMSampleBuffers (Flutter, RN-vision-camera, scanners) rather than an
+        // on-screen preview layer. This is the common camera path on iOS 26.
+        Class dataOutputClass = NSClassFromString(@"AVCaptureVideoDataOutput");
+        if (dataOutputClass) {
+            Method setDelegate = class_getInstanceMethod(
+                    dataOutputClass, NSSelectorFromString(@"setSampleBufferDelegate:queue:"));
+            if (setDelegate) {
+                gOriginalSetSampleBufferDelegate =
+                        method_setImplementation(setDelegate, (IMP)simcam_setSampleBufferDelegate);
+                NSLog(@"[SimCamInject] AVCaptureVideoDataOutput setSampleBufferDelegate:queue: hooked");
+            } else {
+                NSLog(@"[SimCamInject] -[AVCaptureVideoDataOutput setSampleBufferDelegate:queue:] not found");
+            }
+        }
+
         // UIImagePickerController hooks: make `.camera` source type usable
         // in the simulator and install our own viewfinder UI on appear.
         Class pickerClass = NSClassFromString(@"UIImagePickerController");
@@ -423,6 +508,15 @@ static void simcam_install(void) {
             if (isAvail) {
                 gOriginalIsSourceTypeAvailable =
                         method_setImplementation(isAvail, (IMP)simcam_isSourceTypeAvailable);
+            }
+
+            // 1b. Class method: isCameraDeviceAvailable: → YES. image_picker
+            //     and camera UIs check this separately from isSourceTypeAvailable:.
+            Method isCamAvail = class_getClassMethod(
+                    pickerClass, NSSelectorFromString(@"isCameraDeviceAvailable:"));
+            if (isCamAvail) {
+                gOriginalIsCameraDeviceAvailable =
+                        method_setImplementation(isCamAvail, (IMP)simcam_isCameraDeviceAvailable);
             }
 
             // Walk the picker's view tree at viewDidAppear: so we can find

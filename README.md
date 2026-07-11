@@ -20,15 +20,18 @@ menu-bar UI  →  DylibInstaller + SimulatorController (xcrun simctl)  ──inj
 - MockMyCam writes BGRA frames into a memory-mapped file (`/tmp/SimCam.bgra`). `/tmp` inside
   the simulator is the host's `/private/tmp`, so the same bytes are visible to both.
 - It injects `VirtualCamera.dylib` into a simulator app via
-  `xcrun simctl spawn <udid> launchctl setenv DYLD_INSERT_LIBRARIES …`. The dylib swizzles
-  `AVCaptureVideoPreviewLayer` (and photo capture / image picker) to render those frames.
+  `xcrun simctl spawn <udid> launchctl setenv DYLD_INSERT_LIBRARIES …`. The dylib vends a
+  **synthetic `AVCaptureDevice`** (the iOS 26 simulator ships none), makes `AVCaptureSession`
+  accept it, and feeds frames through `AVCaptureVideoDataOutput` sample buffers — so apps that
+  build a real capture session (Flutter, react-native-vision-camera, scanners) work. It also
+  swizzles `AVCaptureVideoPreviewLayer` (and photo capture / image picker) for preview-layer apps.
 - The dylib is **vendored from [baguette](https://github.com/tddworks/baguette)** (Apache-2.0).
   We build it from source (`Scripts/build-dylib.sh`) and bundle it; see `ThirdParty/VirtualCamera/`.
 
 ## Requirements
 
 - Apple Silicon Mac, macOS 14+
-- Xcode 16+ with an iOS Simulator runtime (tested on Xcode 26 / iOS 26.3)
+- Xcode 16+ with an iOS Simulator runtime (tested on Xcode 26.5 / iOS 26.5)
 
 ## Build & run
 
@@ -67,12 +70,15 @@ On first webcam use, macOS asks for camera permission (System Settings ▸ Priva
 
 ## Known limitations
 
-- **Preview-layer cameras only.** The dylib hooks `AVCaptureVideoPreviewLayer`,
-  `AVCapturePhotoOutput`, and `UIImagePickerController` — i.e. standard camera preview,
-  photo capture, and the image picker. Apps that consume raw frames via an
-  `AVCaptureVideoDataOutput` sample-buffer delegate (some barcode/ML/document scanners,
-  `react-native-vision-camera`) won't receive frames. The dylib source is vendored, so this
-  hook can be added later.
+- **Metadata (QR/barcode) output not hooked yet.** The dylib now vends a synthetic
+  `AVCaptureDevice` and delivers frames through `AVCaptureVideoDataOutput` sample buffers
+  (Flutter, `react-native-vision-camera`, most camera/scanner apps) as well as
+  `AVCaptureVideoPreviewLayer`, `AVCapturePhotoOutput`, and `UIImagePickerController`.
+  Apps that scan codes via `AVCaptureMetadataOutput` (rather than reading the sample buffers
+  themselves) don't get synthetic metadata objects yet — that hook can be added next.
+- **Camera permission prompt.** Because the app now drives a real `AVCaptureSession`, iOS
+  shows its normal "… would like to access the Camera" prompt on first use. Tap **Allow** once;
+  frames are delivered regardless of the outcome (there's no real hardware behind it).
 - **One simulator at a time** (single shared `/tmp/SimCam.bgra`).
 - **Relaunch required** after arming (inherent to DYLD injection).
 - EXIF-rotated still images use their stored orientation (rotation not yet auto-applied).

@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:mock-my-cam-main}",
+            "name": "Debug MockMyCam",
+            "target": "MockMyCam",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug MockMyCam"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:mock-my-cam-main}",
+            "name": "Release MockMyCam",
+            "target": "MockMyCam",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release MockMyCam"
+        }
+    ]
+}
