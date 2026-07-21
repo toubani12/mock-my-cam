@@ -31,6 +31,10 @@ build_slice() {
         -framework QuartzCore \
         -framework CoreGraphics \
         -framework AVFoundation \
+        -framework CoreMedia \
+        -framework CoreVideo \
+        -framework Vision \
+        -framework CoreImage \
         -framework ImageIO \
         -framework CoreServices \
         -fobjc-arc \
@@ -41,6 +45,9 @@ build_slice() {
         -o "VirtualCamera.${arch}.dylib" \
         Sources/SimCamInject.m \
         Sources/SimCamPreviewLayerDriver.m \
+        Sources/SimCamSampleBufferDriver.m \
+        Sources/SimCamCaptureShim.m \
+        Sources/SimCamVisionShim.m \
         Sources/SimCamFakePhoto.m \
         Sources/SimCamSharedFrameReader.m
 }

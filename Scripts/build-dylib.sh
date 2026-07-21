@@ -32,6 +32,8 @@ build_slice() {
         -dynamiclib \
         -framework Foundation -framework UIKit -framework QuartzCore \
         -framework CoreGraphics -framework AVFoundation \
+        -framework CoreMedia -framework CoreVideo \
+        -framework Vision -framework CoreImage \
         -framework ImageIO -framework CoreServices \
         -fobjc-arc -ldl \
         -install_name "@rpath/VirtualCamera.dylib" \
@@ -40,6 +42,9 @@ build_slice() {
         -o "$tmp/VirtualCamera.${arch}.dylib" \
         "$SRC/SimCamInject.m" \
         "$SRC/SimCamPreviewLayerDriver.m" \
+        "$SRC/SimCamSampleBufferDriver.m" \
+        "$SRC/SimCamCaptureShim.m" \
+        "$SRC/SimCamVisionShim.m" \
         "$SRC/SimCamFakePhoto.m" \
         "$SRC/SimCamSharedFrameReader.m"
 }

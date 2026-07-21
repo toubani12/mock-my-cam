@@ -27,6 +27,9 @@ cp ".build/release/MockMyCam" "$APP/Contents/MacOS/MockMyCam"
 # Bundle.main. The bytes are NOT re-signed (no --deep below).
 cp "Sources/MockMyCamKit/Resources/VirtualCamera.dylib" "$APP/Contents/Resources/VirtualCamera.dylib"
 cp "$ROOT/Packaging/Info.plist" "$APP/Contents/Info.plist"
+# App icon (Finder / Spotlight / Launchpad / About window). Referenced by
+# CFBundleIconFile=AppIcon in Info.plist.
+cp "$ROOT/Packaging/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 
 codesign --force --sign - \
     --entitlements "$ROOT/Packaging/MockMyCam.entitlements" \

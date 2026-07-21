@@ -19,3 +19,5 @@ Sources/MockMyCamKit/Resources/VirtualCamera.dylib
 
 # packaged landing page (build artifact)
 /mockmycam-site.zip
+
+.vscode/
